@@ -14,7 +14,8 @@ repositories {
 ```
 dependencies {
     compile 'com.amazon:in-app-purchasing:2.0.0'
-    
+    compile 'com.braintree:fortumo-in-app:9.1.2'
+
     compile 'com.amazon:amazon-device-messaging:1.0.1'
     compile 'com.nokia:push:1.0'
 }
