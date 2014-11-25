@@ -20,24 +20,27 @@ apply plugin: 'signing'
 Properties defaultProperties = new Properties();
 
 ext {
-    localProperties = new Properties(defaultProperties)
-    localProperties.load(project.rootProject.file('local.properties').newDataInputStream())
+    localPropertiesFile = project.rootProject.file('local.properties')
+    if (localPropertiesFile.exists()) {
+        localProperties = new Properties(defaultProperties)
+        localProperties.load(localPropertiesFile.newDataInputStream())
 
-    ext."signing.keyId" = localProperties.getProperty('signing.keyId')
-    ext."signing.secretKeyRingFile" = localProperties.getProperty('signing.secretKeyRingFile')
-    ext."signing.password" = localProperties.getProperty('signing.password')
+        ext."signing.keyId" = localProperties.getProperty('signing.keyId')
+        ext."signing.secretKeyRingFile" = localProperties.getProperty('signing.secretKeyRingFile')
+        ext."signing.password" = localProperties.getProperty('signing.password')
 
-    nexusUsername = localProperties.getProperty('nexusUsername')
-    nexusPassword = localProperties.getProperty('nexusPassword')
+        nexusUsername = localProperties.getProperty('nexusUsername')
+        nexusPassword = localProperties.getProperty('nexusPassword')
 
-    pomGroupId = 'org.onepf'
-    pomUrl = 'http://www.onepf.org/openiab'
-    pomLicenseName = 'The Apache Software License, Version 2.0'
-    pomLicenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-    pomLicenseDist = 'repo'
-    pomDeveloperName = 'One Platform Foundation'
-    pomDeveloperId = 'onepf'
-    pomPackaging = 'aar'
+        pomGroupId = 'org.onepf'
+        pomUrl = 'http://www.onepf.org/openiab'
+        pomLicenseName = 'The Apache Software License, Version 2.0'
+        pomLicenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+        pomLicenseDist = 'repo'
+        pomDeveloperName = 'One Platform Foundation'
+        pomDeveloperId = 'onepf'
+        pomPackaging = 'aar'
+    }
 }
 
 def isReleaseBuild() {
@@ -59,9 +62,11 @@ def getPomPackaging() {
 }
 
 def hasNexusCredentials() {
-    return project.localProperties.contains('nexusUsername') && project.localProperties.contains('nexusPassword')
+    if (!project.localPropertiesFile.exists()) {
+        return false
+    }
+    return project.nexusUsername != null && project.nexusPassword != null
 }
-
 
 if (hasNexusCredentials()) {
     afterEvaluate { project ->
