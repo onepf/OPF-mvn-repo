@@ -19,7 +19,7 @@ while [[ $# > 0 ]]; do
 
     case $key in
         -h|--help)
-            echo "mvn_push --group package --id package --version version --file file [--javadoc file|path] [--sources file]"
+            echo "mvn-push --group package --id package --version version --file file [--javadoc file|path] [--sources file]"
             exit 0
         ;;
         --group)
