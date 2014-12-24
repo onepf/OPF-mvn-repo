@@ -43,8 +43,7 @@ ext {
 }
 
 def isReleaseBuild() {
-//    return project.android.defaultConfig.versionName.contains("SNAPSHOT") == false
-    return false
+    return project.android.defaultConfig.versionName.contains("SNAPSHOT") == false
 }
 
 def getReleaseRepositoryUrl() {
