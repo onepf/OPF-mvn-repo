@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Chris Banes
+ * Copyright 2012-2014 One Platform Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,12 +39,12 @@ ext {
         pomLicenseDist = 'repo'
         pomDeveloperName = 'One Platform Foundation'
         pomDeveloperId = 'onepf'
-        pomPackaging = 'aar'
     }
 }
 
 def isReleaseBuild() {
-    return project.android.defaultConfig.versionName.contains("SNAPSHOT") == false
+//    return project.android.defaultConfig.versionName.contains("SNAPSHOT") == false
+    return false
 }
 
 def getReleaseRepositoryUrl() {
@@ -73,7 +73,9 @@ if (hasNexusCredentials()) {
         uploadArchives {
             repositories {
                 mavenDeployer {
-                    beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+                    if (isReleaseBuild()) {
+                        beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+                    }
 
                     pom.version = project.android.defaultConfig.versionName
                     pom.groupId = project.pomGroupId
@@ -87,7 +89,7 @@ if (hasNexusCredentials()) {
                     }
 
                     pom.project {
-                        packaging project.pomPackaging
+                        packaging POM_PACKAGING
                         url project.pomUrl
                         name POM_NAME
                         description POM_DESCRIPTION
@@ -125,9 +127,11 @@ if (hasNexusCredentials()) {
             }
         }
 
-        signing {
-            required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
-            sign configurations.archives
+        if (isReleaseBuild()) {
+            signing {
+                required true
+                sign configurations.archives
+            }
         }
 
         task androidJavadocs(type: Javadoc) {
