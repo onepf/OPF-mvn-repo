@@ -17,29 +17,41 @@
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-Properties defaultProperties = new Properties();
-
 ext {
-    localPropertiesFile = project.rootProject.file('local.properties')
-    if (localPropertiesFile.exists()) {
-        localProperties = new Properties(defaultProperties)
-        localProperties.load(localPropertiesFile.newDataInputStream())
+    projectLocalPropertiesFile = project.rootProject.file('local.properties')
+    projectLocalProperties = loadLocalProperties(projectLocalPropertiesFile)
 
-        ext."signing.keyId" = localProperties.getProperty('signing.keyId')
-        ext."signing.secretKeyRingFile" = localProperties.getProperty('signing.secretKeyRingFile')
-        ext."signing.password" = localProperties.getProperty('signing.password')
+    moduleLocalPropertiesFile = project.file('local.properties')
+    moduleLocalProperties = loadLocalProperties(moduleLocalPropertiesFile)
 
-        nexusUsername = localProperties.getProperty('nexusUsername')
-        nexusPassword = localProperties.getProperty('nexusPassword')
+    ext."signing.keyId" = getLocalProperty('signing.keyId')
+    ext."signing.secretKeyRingFile" = getLocalProperty('signing.secretKeyRingFile')
+    ext."signing.password" = getLocalProperty('signing.password')
 
-        pomGroupId = 'org.onepf'
-        pomUrl = 'http://www.onepf.org/openiab'
-        pomLicenseName = 'The Apache Software License, Version 2.0'
-        pomLicenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-        pomLicenseDist = 'repo'
-        pomDeveloperName = 'One Platform Foundation'
-        pomDeveloperId = 'onepf'
+    nexusUsername = getLocalProperty('nexusUsername')
+    nexusPassword = getLocalProperty('nexusPassword')
+
+    pomGroupId = 'org.onepf'
+    pomUrl = 'http://www.onepf.org/openiab'
+    pomLicenseName = 'The Apache Software License, Version 2.0'
+    pomLicenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+    pomLicenseDist = 'repo'
+    pomDeveloperName = 'One Platform Foundation'
+    pomDeveloperId = 'onepf'
+}
+
+def loadLocalProperties(propertiesFile) {
+    def localProperties = new Properties()
+    if (propertiesFile.exists()) {
+        localProperties.load(propertiesFile.newDataInputStream())
     }
+    return localProperties
+}
+
+def getLocalProperty(propertyName) {
+    def moduleProperty = project.moduleLocalProperties.getProperty(propertyName)
+    def projectProperty = project.projectLocalProperties.getProperty(propertyName)
+    return moduleProperty ?: projectProperty
 }
 
 def isReleaseBuild() {
@@ -61,7 +73,7 @@ def getPomPackaging() {
 }
 
 def hasNexusCredentials() {
-    if (!project.localPropertiesFile.exists()) {
+    if (!project.projectLocalPropertiesFile.exists() && !project.moduleLocalPropertiesFile.exists()) {
         return false
     }
     return project.nexusUsername != null && project.nexusPassword != null
