@@ -32,7 +32,7 @@ ext {
     nexusPassword = getLocalProperty('nexusPassword')
 
     pomGroupId = 'org.onepf'
-    pomUrl = 'http://www.onepf.org/openiab'
+    pomUrl = getPomUrl()
     pomLicenseName = 'The Apache Software License, Version 2.0'
     pomLicenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
     pomLicenseDist = 'repo'
@@ -70,6 +70,10 @@ def getSnapshotRepositoryUrl() {
 
 def getPomPackaging() {
     return hasProperty('POM_PACKAGING') ? POM_PACKAGING : 'aar'
+}
+
+def getPomUrl() {
+    return hasProperty('POM_URL') ? POM_URL : "http://www.onepf.org/openiab"
 }
 
 def hasNexusCredentials() {
