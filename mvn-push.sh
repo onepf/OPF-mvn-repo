@@ -73,7 +73,9 @@ fi
 if [[ -d ${JAVADOC} ]]; then
     tempJar=$(basename ${FILE})
     tempJar="${MVN_REPO}/${tempJar/.jar/-javadoc.jar}"
-    jar cf ${tempJar} ${JAVADOC}
+    cd ${JAVADOC}
+    jar cf ${tempJar} ./*
+    cd -
     JAVADOC=${tempJar}
     CLEANUP="${CLEANUP} ${tempJar}"
     unset tempJar
