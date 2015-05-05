@@ -150,7 +150,7 @@ if (hasNexusCredentials()) {
         }
 
         task androidJavadocs(type: Javadoc) {
-            source = android.sourceSets.main.java.sourceFiles
+            source = android.sourceSets.main.java.source
         }
 
         task androidJavadocsJar(type: Jar) {
