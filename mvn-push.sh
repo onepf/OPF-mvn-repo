@@ -2,7 +2,6 @@
 set -o nounset
 set -o errexit
 
-readonly PACKAGING="jar"
 readonly MVN_REPO=$(dirname $(readlink -e $0))
 GROUP_ID=""
 ARTIFACT_ID=""
@@ -68,6 +67,14 @@ elif [[ -z ${FILE} ]]; then
     echo "file is empty or invalid."
     exit 1
 fi
+
+# Detect packaging
+if [[ ${FILE: -4} == ".aar" ]]; then
+    PACKAGING="aar"
+else
+    PACKAGING="jar"
+fi
+readonly PACKAGING
 
 # Pack docs in jar if necessary
 if [[ -d ${JAVADOC} ]]; then

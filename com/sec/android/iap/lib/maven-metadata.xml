@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>com.sec.android.iap</groupId>
+  <artifactId>lib</artifactId>
+  <versioning>
+    <release>2.0.1</release>
+    <versions>
+      <version>2.0.1</version>
+    </versions>
+    <lastUpdated>20150512130738</lastUpdated>
+  </versioning>
+</metadata>
