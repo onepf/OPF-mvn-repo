@@ -93,7 +93,7 @@
         <exclude name="TooManyStaticImports"/>
     </rule>
 
-    <rule ref="rulesets/java/junit.xml"/>
+    <!--<rule ref="rulesets/java/junit.xml"/>-->
 
     <rule ref="rulesets/java/logging-jakarta-commons.xml">
         <exclude name="GuardLogStatement"/>
