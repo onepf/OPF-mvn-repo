@@ -43,14 +43,6 @@ ext {
     pomDeveloperId = 'onepf'
 }
 
-//Common project properties
-allprojects {
-    configurations.all {
-        // check for updates every build
-        resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-    }
-}
-
 //Common android properties
 android {
     sourceSets {
