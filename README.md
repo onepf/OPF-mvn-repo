@@ -24,5 +24,8 @@ dependencies {
     compile 'com.amazon:amazon-device-messaging:1.0.1'
     // Nokia push
     compile 'com.nokia:push:1.0'
+    
+    // Stub FindBug annotations
+    compile 'org.onepf.findbugs:annotations:1.0'
 }
 ```
