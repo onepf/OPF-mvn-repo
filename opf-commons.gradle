@@ -17,7 +17,6 @@
 apply plugin: 'android-sdk-manager'
 apply plugin: 'maven'
 apply plugin: 'signing'
-apply plugin: 'com.android.library'
 apply plugin: 'com.noveogroup.android.check'
 apply plugin: 'jacoco'
 
@@ -42,12 +41,37 @@ ext {
     pomLicenseDist = 'repo'
     pomDeveloperName = 'One Platform Foundation'
     pomDeveloperId = 'onepf'
+
+    //apk signing
+    storeFile = getFile(getLocalProperty('opfpush-sample.signing'))
+    storePassword = getLocalProperty('StorePassword')
+    keyAlias = getLocalProperty('KeyAlias')
+    keyPassword = getLocalProperty('KeyPassword')
+
+    isSigningKeySpecified = isSigningKeySpecified()
+}
+
+//Common allprojects properties
+allprojects {
+    configurations.all {
+        // check for updates every build
+        resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    }
 }
 
 //Common android properties
 android {
     compileSdkVersion project.compileSdkVersion
     buildToolsVersion project.buildToolsVersion
+
+    signingConfigs {
+        release {
+            storeFile project.storeFile
+            storePassword project.storePassword
+            keyAlias project.keyAlias
+            keyPassword project.keyPassword
+        }
+    }
 
     sourceSets {
         androidTest.java.srcDirs += 'src/test/java'
@@ -67,6 +91,10 @@ android {
 
     jacoco {
         version "0.7.1.201405082137"
+    }
+
+    packagingOptions {
+        exclude 'LICENSE.txt'
     }
 }
 
@@ -129,6 +157,17 @@ task jacocoTestReport(type: JacocoReport, dependsOn: "testDebug") {
     }
 }
 
+//apk signing
+def getFile(path) {
+    if (path != null) {
+        return file(path)
+    }
+}
+
+def isSigningKeySpecified() {
+    return project.storeFile != null && project.storePassword != null && project.keyAlias != null && project.keyPassword != null
+}
+
 //Uploading archives properties
 def loadLocalProperties(propertiesFile) {
     def localProperties = new Properties()
@@ -173,7 +212,7 @@ def hasNexusCredentials() {
     return project.nexusUsername != null && project.nexusPassword != null
 }
 
-if (hasNexusCredentials()) {
+if (hasNexusCredentials() && hasProperty('POM_ARTIFACT_ID')) {
     afterEvaluate { project ->
         uploadArchives {
             repositories {
