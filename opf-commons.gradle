@@ -21,21 +21,14 @@ apply plugin: 'com.noveogroup.android.check'
 apply plugin: 'jacoco'
 
 ext {
-    projectLocalPropertiesFile = project.rootProject.file('local.properties')
-    projectLocalProperties = loadLocalProperties(projectLocalPropertiesFile)
+    localProperties = loadLocalProperties()
 
-    moduleLocalPropertiesFile = project.file('local.properties')
-    moduleLocalProperties = loadLocalProperties(moduleLocalPropertiesFile)
-
-    ext."signing.keyId" = getLocalProperty('signing.keyId')
-    ext."signing.secretKeyRingFile" = getLocalProperty('signing.secretKeyRingFile')
-    ext."signing.password" = getLocalProperty('signing.password')
-
-    nexusUsername = getLocalProperty('nexusUsername')
-    nexusPassword = getLocalProperty('nexusPassword')
+    ext."signing.keyId" = localProperties.get('signing.keyId')
+    ext."signing.secretKeyRingFile" = localProperties.get('signing.secretKeyRingFile')
+    ext."signing.password" = localProperties.get('signing.password')
 
     pomGroupId = 'org.onepf'
-    pomUrl = getPomUrl()
+    pomPackaging = getPomPackaging()
     pomLicenseName = 'The Apache Software License, Version 2.0'
     pomLicenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
     pomLicenseDist = 'repo'
@@ -43,12 +36,34 @@ ext {
     pomDeveloperId = 'onepf'
 
     //apk signing
-    storeFile = getFile(getLocalProperty('opfpush-sample.signing'))
-    storePassword = getLocalProperty('StorePassword')
-    keyAlias = getLocalProperty('KeyAlias')
-    keyPassword = getLocalProperty('KeyPassword')
+    storeFile = getFile(localProperties.get('opfpush-sample.signing'))
 
     isSigningKeySpecified = isSigningKeySpecified()
+}
+
+def loadLocalProperties() {
+    def localProperties = new HashMap<String, String>()
+
+    def projectLocalPropertiesFile = project.rootProject.file('local.properties')
+    loadLocalProperties(projectLocalPropertiesFile, localProperties)
+
+    def moduleLocalPropertiesFile = project.file('local.properties')
+    loadLocalProperties(moduleLocalPropertiesFile, localProperties)
+
+    return localProperties
+}
+
+def loadLocalProperties(propertiesFile, localProperties) {
+    def loadedProperties = new Properties()
+    if (propertiesFile.exists()) {
+        loadedProperties.load(propertiesFile.newDataInputStream())
+
+        def loadedPropertiesNames = loadedProperties.propertyNames()
+        while (loadedPropertiesNames.hasMoreElements()) {
+            def key = loadedPropertiesNames.nextElement()
+            localProperties.put(key, loadedProperties.getProperty(key))
+        }
+    }
 }
 
 //Common allprojects properties
@@ -67,9 +82,9 @@ android {
     signingConfigs {
         release {
             storeFile project.storeFile
-            storePassword project.storePassword
-            keyAlias project.keyAlias
-            keyPassword project.keyPassword
+            storePassword project.localProperties.get('StorePassword')
+            keyAlias project.localProperties.get('KeyAlias')
+            keyPassword project.localProperties.get('KeyPassword')
         }
     }
 
@@ -157,7 +172,7 @@ task jacocoTestReport(type: JacocoReport, dependsOn: "testDebug") {
     }
 }
 
-//apk signing
+//apk signing functions
 def getFile(path) {
     if (path != null) {
         return file(path)
@@ -165,58 +180,62 @@ def getFile(path) {
 }
 
 def isSigningKeySpecified() {
-    return project.storeFile != null && project.storePassword != null && project.keyAlias != null && project.keyPassword != null
+    return project.storeFile != null &&
+            project.localProperties.containsKey('StorePassword') &&
+            project.localProperties.containsKey('KeyAlias') &&
+            project.localProperties.containsKey('KeyPassword')
 }
 
-//Uploading archives properties
-def loadLocalProperties(propertiesFile) {
-    def localProperties = new Properties()
-    if (propertiesFile.exists()) {
-        localProperties.load(propertiesFile.newDataInputStream())
-    }
-    return localProperties
-}
-
-def getLocalProperty(propertyName) {
-    def moduleProperty = project.moduleLocalProperties.getProperty(propertyName)
-    def projectProperty = project.projectLocalProperties.getProperty(propertyName)
-    return moduleProperty ?: projectProperty
-}
-
+//Uploading archives functions
 def isReleaseBuild() {
     return project.android.defaultConfig.versionName.contains("SNAPSHOT") == false
 }
 
-def getReleaseRepositoryUrl() {
-    return hasProperty('RELEASE_REPOSITORY_URL') ? RELEASE_REPOSITORY_URL
-            : "https://yandex.ru/"
-}
-
-def getSnapshotRepositoryUrl() {
-    return hasProperty('SNAPSHOT_REPOSITORY_URL') ? SNAPSHOT_REPOSITORY_URL
-            : "https://yandex.ru/"
-}
-
+//todo test
 def getPomPackaging() {
     return hasProperty('POM_PACKAGING') ? POM_PACKAGING : 'aar'
 }
 
-def getPomUrl() {
-    return hasProperty('POM_URL') ? POM_URL : "http://www.onepf.org/openiab"
-}
-
 def hasNexusCredentials() {
-    if (!project.projectLocalPropertiesFile.exists() && !project.moduleLocalPropertiesFile.exists()) {
-        return false
-    }
-    return project.nexusUsername != null && project.nexusPassword != null
+    return project.localProperties.containsKey('nexusUsername') && project.localProperties.containsKey('nexusPassword')
 }
 
+def checkArchiveUploadingProperties() {
+    def exceptionMessage = 'You must specify %s in a gradle.properties file'
+    if (!hasProperty('RELEASE_REPOSITORY_URL')) {
+        throw new IllegalStateException(String.format(Locale.US, exceptionMessage, 'RELEASE_REPOSITORY_URL'))
+    }
+    if (!hasProperty('SNAPSHOT_REPOSITORY_URL')) {
+        throw new IllegalStateException(String.format(Locale.US, exceptionMessage, 'SNAPSHOT_REPOSITORY_URL'))
+    }
+    if (!hasProperty('POM_URL')) {
+        throw new IllegalStateException(String.format(Locale.US, exceptionMessage, 'POM_URL'))
+    }
+    if (!hasProperty('POM_NAME')) {
+        throw new IllegalStateException(String.format(Locale.US, exceptionMessage, 'POM_NAME'))
+    }
+    if (!hasProperty('POM_DESCRIPTION')) {
+        throw new IllegalStateException(String.format(Locale.US, exceptionMessage, 'POM_DESCRIPTION'))
+    }
+    if (!hasProperty('POM_SCM_URL')) {
+        throw new IllegalStateException(String.format(Locale.US, exceptionMessage, 'POM_SCM_URL'))
+    }
+    if (!hasProperty('POM_SCM_CONNECTION')) {
+        throw new IllegalStateException(String.format(Locale.US, exceptionMessage, 'POM_SCM_CONNECTION'))
+    }
+    if (!hasProperty('POM_SCM_DEV_CONNECTION')) {
+        throw new IllegalStateException(String.format(Locale.US, exceptionMessage, 'POM_SCM_DEV_CONNECTION'))
+    }
+}
+
+//uploadArchives task
 if (hasNexusCredentials() && hasProperty('POM_ARTIFACT_ID')) {
     afterEvaluate { project ->
         uploadArchives {
             repositories {
                 mavenDeployer {
+                    checkArchiveUploadingProperties()
+
                     if (isReleaseBuild()) {
                         beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
                     }
@@ -225,16 +244,22 @@ if (hasNexusCredentials() && hasProperty('POM_ARTIFACT_ID')) {
                     pom.groupId = project.pomGroupId
                     pom.artifactId = POM_ARTIFACT_ID
 
-                    repository(url: getReleaseRepositoryUrl()) {
-                        authentication(userName: project.nexusUsername, password: project.nexusPassword)
+                    repository(url: RELEASE_REPOSITORY_URL) {
+                        authentication(
+                                userName: project.localProperties.get('nexusUsername'),
+                                password: project.localProperties.get('nexusPassword')
+                        )
                     }
-                    snapshotRepository(url: getSnapshotRepositoryUrl()) {
-                        authentication(userName: project.nexusUsername, password: project.nexusPassword)
+                    snapshotRepository(url: SNAPSHOT_REPOSITORY_URL) {
+                        authentication(
+                                userName: project.localProperties.get('nexusUsername'),
+                                password: project.localProperties.get('nexusPassword')
+                        )
                     }
 
                     pom.project {
-                        packaging POM_PACKAGING
-                        url project.pomUrl
+                        packaging = project.pomPackaging
+                        url POM_URL
                         name POM_NAME
                         description POM_DESCRIPTION
 
