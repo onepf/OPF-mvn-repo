@@ -58,11 +58,7 @@ def loadLocalProperties(propertiesFile, localProperties) {
     if (propertiesFile.exists()) {
         loadedProperties.load(propertiesFile.newDataInputStream())
 
-        def loadedPropertiesNames = loadedProperties.propertyNames()
-        while (loadedPropertiesNames.hasMoreElements()) {
-            def key = loadedPropertiesNames.nextElement()
-            localProperties.put(key, loadedProperties.getProperty(key))
-        }
+        localProperties << loadedProperties
     }
 }
 
@@ -157,15 +153,6 @@ task jacocoTestReport(type: JacocoReport, dependsOn: "testDebug") {
             ])
     sourceDirectories = files(coverageSourceDirs)
     executionData = files("$buildDir/jacoco/testDebug.exec")
-    // Bit hacky but fixes https://code.google.com/p/android/issues/detail?id=69174.
-    // We iterate through the compiled .class tree and rename $$ to $.
-    doFirst {
-        new File("$buildDir/intermediates/classes/").eachFileRecurse { file ->
-            if (file.name.contains('$$')) {
-                file.renameTo(file.path.replace('$$', '$'))
-            }
-        }
-    }
 
     doLast {
         println 'Wrote HTML jacoco report to file:' + projectDir + "/build/reports/jacoco/jacocoTestReport/html/index.html"
@@ -191,7 +178,6 @@ def isReleaseBuild() {
     return project.android.defaultConfig.versionName.contains("SNAPSHOT") == false
 }
 
-//todo test
 def getPomPackaging() {
     return hasProperty('POM_PACKAGING') ? POM_PACKAGING : 'aar'
 }
@@ -200,42 +186,48 @@ def hasNexusCredentials() {
     return project.localProperties.containsKey('nexusUsername') && project.localProperties.containsKey('nexusPassword')
 }
 
-def checkArchiveUploadingProperties() {
-    def exceptionMessage = 'You must specify %s in a gradle.properties file'
-    if (!hasProperty('RELEASE_REPOSITORY_URL')) {
-        throw new IllegalStateException(String.format(Locale.US, exceptionMessage, 'RELEASE_REPOSITORY_URL'))
-    }
-    if (!hasProperty('SNAPSHOT_REPOSITORY_URL')) {
-        throw new IllegalStateException(String.format(Locale.US, exceptionMessage, 'SNAPSHOT_REPOSITORY_URL'))
-    }
-    if (!hasProperty('POM_URL')) {
-        throw new IllegalStateException(String.format(Locale.US, exceptionMessage, 'POM_URL'))
-    }
-    if (!hasProperty('POM_NAME')) {
-        throw new IllegalStateException(String.format(Locale.US, exceptionMessage, 'POM_NAME'))
-    }
-    if (!hasProperty('POM_DESCRIPTION')) {
-        throw new IllegalStateException(String.format(Locale.US, exceptionMessage, 'POM_DESCRIPTION'))
-    }
-    if (!hasProperty('POM_SCM_URL')) {
-        throw new IllegalStateException(String.format(Locale.US, exceptionMessage, 'POM_SCM_URL'))
-    }
-    if (!hasProperty('POM_SCM_CONNECTION')) {
-        throw new IllegalStateException(String.format(Locale.US, exceptionMessage, 'POM_SCM_CONNECTION'))
-    }
-    if (!hasProperty('POM_SCM_DEV_CONNECTION')) {
-        throw new IllegalStateException(String.format(Locale.US, exceptionMessage, 'POM_SCM_DEV_CONNECTION'))
+uploadArchives {
+    doFirst {
+        checkArchiveUploadingProperties()
     }
 }
 
+def checkArchiveUploadingProperties() {
+    checkProperty('RELEASE_REPOSITORY_URL')
+    checkProperty('SNAPSHOT_REPOSITORY_URL')
+    checkProperty('POM_URL')
+    checkProperty('POM_NAME')
+    checkProperty('POM_DESCRIPTION')
+    checkProperty('POM_SCM_URL')
+    checkProperty('POM_SCM_CONNECTION')
+    checkProperty('POM_SCM_DEV_CONNECTION')
+    checkProperty('POM_ARTIFACT_ID')
+}
+
+def checkProperty(propertyName) {
+    if (!hasProperty(propertyName)) {
+        throw new IllegalStateException('You must specify ' + propertyName + ' in gradle.properties file')
+    }
+}
+
+def hasAllArchivesUploadingProperties() {
+    return hasProperty('RELEASE_REPOSITORY_URL') &&
+            hasProperty('SNAPSHOT_REPOSITORY_URL') &&
+            hasProperty('POM_URL') &&
+            hasProperty('POM_NAME') &&
+            hasProperty('POM_DESCRIPTION') &&
+            hasProperty('POM_SCM_URL') &&
+            hasProperty('POM_SCM_CONNECTION') &&
+            hasProperty('POM_SCM_DEV_CONNECTION') &&
+            hasProperty('POM_ARTIFACT_ID')
+}
+
 //uploadArchives task
-if (hasNexusCredentials() && hasProperty('POM_ARTIFACT_ID')) {
+if (hasNexusCredentials() && hasAllArchivesUploadingProperties()) {
     afterEvaluate { project ->
         uploadArchives {
             repositories {
                 mavenDeployer {
-                    checkArchiveUploadingProperties()
-
                     if (isReleaseBuild()) {
                         beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
                     }
