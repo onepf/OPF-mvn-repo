@@ -204,7 +204,7 @@ def checkArchiveUploadingProperties() {
 
 def hasAllArchivesUploadingProperties() {
     return !project.pomCheckList.any {
-        return !project.hasProperty(it + '')
+        return !project.hasProperty(it)
     }
 }
 
