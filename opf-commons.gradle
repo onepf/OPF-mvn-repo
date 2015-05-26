@@ -35,10 +35,12 @@ ext {
     pomDeveloperName = 'One Platform Foundation'
     pomDeveloperId = 'onepf'
 
+    pomCheckList = ['RELEASE_REPOSITORY_URL', 'SNAPSHOT_REPOSITORY_URL', 'POM_URL', 'POM_NAME', 'POM_DESCRIPTION',
+                    'POM_SCM_URL', 'POM_SCM_CONNECTION', 'POM_SCM_DEV_CONNECTION', 'POM_ARTIFACT_ID']
+
     //apk signing
     storeFile = getFile(localProperties.get('opfpush-sample.signing'))
-
-    isSigningKeySpecified = isSigningKeySpecified()
+    isApkSigningCredentialsSpecified = isApkSigningCredentialsSpecified()
 }
 
 def loadLocalProperties() {
@@ -166,7 +168,7 @@ def getFile(path) {
     }
 }
 
-def isSigningKeySpecified() {
+def isApkSigningCredentialsSpecified() {
     return project.storeFile != null &&
             project.localProperties.containsKey('StorePassword') &&
             project.localProperties.containsKey('KeyAlias') &&
@@ -193,33 +195,17 @@ uploadArchives {
 }
 
 def checkArchiveUploadingProperties() {
-    checkProperty('RELEASE_REPOSITORY_URL')
-    checkProperty('SNAPSHOT_REPOSITORY_URL')
-    checkProperty('POM_URL')
-    checkProperty('POM_NAME')
-    checkProperty('POM_DESCRIPTION')
-    checkProperty('POM_SCM_URL')
-    checkProperty('POM_SCM_CONNECTION')
-    checkProperty('POM_SCM_DEV_CONNECTION')
-    checkProperty('POM_ARTIFACT_ID')
-}
-
-def checkProperty(propertyName) {
-    if (!hasProperty(propertyName)) {
-        throw new IllegalStateException('You must specify ' + propertyName + ' in gradle.properties file')
+    project.pomCheckList.each {
+        if (!project.hasProperty(it)) {
+            throw new IllegalStateException('You must specify ' + it + ' in gradle.properties file')
+        }
     }
 }
 
 def hasAllArchivesUploadingProperties() {
-    return hasProperty('RELEASE_REPOSITORY_URL') &&
-            hasProperty('SNAPSHOT_REPOSITORY_URL') &&
-            hasProperty('POM_URL') &&
-            hasProperty('POM_NAME') &&
-            hasProperty('POM_DESCRIPTION') &&
-            hasProperty('POM_SCM_URL') &&
-            hasProperty('POM_SCM_CONNECTION') &&
-            hasProperty('POM_SCM_DEV_CONNECTION') &&
-            hasProperty('POM_ARTIFACT_ID')
+    return !project.pomCheckList.any {
+        return !project.hasProperty(it + '')
+    }
 }
 
 //uploadArchives task
