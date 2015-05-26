@@ -1,0 +1,305 @@
+/*
+ * Copyright 2012-2014 One Platform Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'android-sdk-manager'
+apply plugin: 'maven'
+apply plugin: 'signing'
+apply plugin: 'com.noveogroup.android.check'
+apply plugin: 'jacoco'
+
+ext {
+    localProperties = loadLocalProperties()
+
+    ext."signing.keyId" = localProperties.get('signing.keyId')
+    ext."signing.secretKeyRingFile" = localProperties.get('signing.secretKeyRingFile')
+    ext."signing.password" = localProperties.get('signing.password')
+
+    pomGroupId = 'org.onepf'
+    pomPackaging = getPomPackaging()
+    pomLicenseName = 'The Apache Software License, Version 2.0'
+    pomLicenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+    pomLicenseDist = 'repo'
+    pomDeveloperName = 'One Platform Foundation'
+    pomDeveloperId = 'onepf'
+
+    pomCheckList = ['RELEASE_REPOSITORY_URL', 'SNAPSHOT_REPOSITORY_URL', 'POM_URL', 'POM_NAME', 'POM_DESCRIPTION',
+                    'POM_SCM_URL', 'POM_SCM_CONNECTION', 'POM_SCM_DEV_CONNECTION', 'POM_ARTIFACT_ID']
+
+    //apk signing
+    storeFile = getFile(localProperties.get('opfpush-sample.signing'))
+    isApkSigningCredentialsSpecified = isApkSigningCredentialsSpecified()
+}
+
+def loadLocalProperties() {
+    def localProperties = new HashMap<String, String>()
+
+    def projectLocalPropertiesFile = project.rootProject.file('local.properties')
+    loadLocalProperties(projectLocalPropertiesFile, localProperties)
+
+    def moduleLocalPropertiesFile = project.file('local.properties')
+    loadLocalProperties(moduleLocalPropertiesFile, localProperties)
+
+    return localProperties
+}
+
+def loadLocalProperties(propertiesFile, localProperties) {
+    def loadedProperties = new Properties()
+    if (propertiesFile.exists()) {
+        loadedProperties.load(propertiesFile.newDataInputStream())
+
+        localProperties << loadedProperties
+    }
+}
+
+//Common allprojects properties
+allprojects {
+    configurations.all {
+        // check for updates every build
+        resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    }
+}
+
+//Common android properties
+android {
+    compileSdkVersion project.compileSdkVersion
+    buildToolsVersion project.buildToolsVersion
+
+    signingConfigs {
+        release {
+            storeFile project.storeFile
+            storePassword project.localProperties.get('StorePassword')
+            keyAlias project.localProperties.get('KeyAlias')
+            keyPassword project.localProperties.get('KeyPassword')
+        }
+    }
+
+    sourceSets {
+        androidTest.java.srcDirs += 'src/test/java'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
+    }
+
+    lintOptions {
+        abortOnError true
+        checkAllWarnings true
+        warningsAsErrors true
+        disable 'AllowBackup', 'ContentDescription', 'InvalidPackage', 'SelectableText', 'SpUsage', 'GradleDynamicVersion'
+    }
+
+    jacoco {
+        version "0.7.1.201405082137"
+    }
+
+    packagingOptions {
+        exclude 'LICENSE.txt'
+    }
+}
+
+//Checkstyle and PMD rules
+check {
+    abortOnError true
+
+    checkstyle {
+        config resources.text.fromString('https://raw.githubusercontent.com/onepf/OPF-mvn-repo/master/config/checkstyle.xml'.toURL().text)
+    }
+
+    pmd {
+        config resources.text.fromString('https://raw.githubusercontent.com/onepf/OPF-mvn-repo/master/config/pmd.xml'.toURL().text)
+    }
+}
+
+//Jacoco task
+build {
+    doLast {
+        jacocoTestReport.execute()
+    }
+}
+
+jacoco {
+    toolVersion "0.7.1.201405082137"
+}
+
+def coverageSourceDirs = [
+        'src/main/java',
+]
+
+task jacocoTestReport(type: JacocoReport, dependsOn: "testDebug") {
+    group = "Reporting"
+    description = "Generate Jacoco coverage reports after running tests."
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
+    classDirectories = fileTree(
+            dir: './build/intermediates/classes/debug',
+            excludes: ['**/R*.class',
+                       '**/*$InjectAdapter.class',
+                       '**/*$ModuleAdapter.class',
+                       '**/*$ViewInjector*.class'
+            ])
+    sourceDirectories = files(coverageSourceDirs)
+    executionData = files("$buildDir/jacoco/testDebug.exec")
+
+    doLast {
+        println 'Wrote HTML jacoco report to file:' + projectDir + "/build/reports/jacoco/jacocoTestReport/html/index.html"
+    }
+}
+
+//apk signing functions
+def getFile(path) {
+    if (path != null) {
+        return file(path)
+    }
+}
+
+def isApkSigningCredentialsSpecified() {
+    return project.storeFile != null &&
+            project.localProperties.containsKey('StorePassword') &&
+            project.localProperties.containsKey('KeyAlias') &&
+            project.localProperties.containsKey('KeyPassword')
+}
+
+//Uploading archives functions
+def isReleaseBuild() {
+    return project.android.defaultConfig.versionName.contains("SNAPSHOT") == false
+}
+
+def getPomPackaging() {
+    return hasProperty('POM_PACKAGING') ? POM_PACKAGING : 'aar'
+}
+
+def hasNexusCredentials() {
+    return project.localProperties.containsKey('nexusUsername') && project.localProperties.containsKey('nexusPassword')
+}
+
+uploadArchives {
+    doFirst {
+        checkArchiveUploadingProperties()
+    }
+}
+
+def checkArchiveUploadingProperties() {
+    project.pomCheckList.each {
+        if (!project.hasProperty(it)) {
+            throw new IllegalStateException('You must specify ' + it + ' in gradle.properties file')
+        }
+    }
+}
+
+def hasAllArchivesUploadingProperties() {
+    return !project.pomCheckList.any {
+        return !project.hasProperty(it + '')
+    }
+}
+
+//uploadArchives task
+if (hasNexusCredentials() && hasAllArchivesUploadingProperties()) {
+    afterEvaluate { project ->
+        uploadArchives {
+            repositories {
+                mavenDeployer {
+                    if (isReleaseBuild()) {
+                        beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+                    }
+
+                    pom.version = project.android.defaultConfig.versionName
+                    pom.groupId = project.pomGroupId
+                    pom.artifactId = POM_ARTIFACT_ID
+
+                    repository(url: RELEASE_REPOSITORY_URL) {
+                        authentication(
+                                userName: project.localProperties.get('nexusUsername'),
+                                password: project.localProperties.get('nexusPassword')
+                        )
+                    }
+                    snapshotRepository(url: SNAPSHOT_REPOSITORY_URL) {
+                        authentication(
+                                userName: project.localProperties.get('nexusUsername'),
+                                password: project.localProperties.get('nexusPassword')
+                        )
+                    }
+
+                    pom.project {
+                        packaging = project.pomPackaging
+                        url POM_URL
+                        name POM_NAME
+                        description POM_DESCRIPTION
+
+                        scm {
+                            url POM_SCM_URL
+                            connection POM_SCM_CONNECTION
+                            developerConnection POM_SCM_DEV_CONNECTION
+                        }
+
+                        licenses {
+                            license {
+                                name project.pomLicenseName
+                                url project.pomLicenseUrl
+                                distribution project.pomLicenseDist
+                            }
+                        }
+
+                        repositories {
+                            repository {
+                                id 'onepf-repo'
+                                name 'OnePF Repository'
+                                url 'https://raw.githubusercontent.com/onepf/OPF-mvn-repo/master/'
+                            }
+                        }
+
+                        developers {
+                            developer {
+                                id project.pomDeveloperId
+                                name project.pomDeveloperName
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (isReleaseBuild()) {
+            signing {
+                required true
+                sign configurations.archives
+            }
+        }
+
+        task androidJavadocs(type: Javadoc) {
+            source = android.sourceSets.main.java.sourceFiles
+        }
+
+        task androidJavadocsJar(type: Jar) {
+            classifier = 'javadoc'
+            //basename = artifact_id
+            from androidJavadocs.destinationDir
+        }
+
+        task androidSourcesJar(type: Jar) {
+            classifier = 'sources'
+            from android.sourceSets.main.java.sourceFiles
+        }
+
+        artifacts {
+            archives packageReleaseJar
+            archives androidSourcesJar
+            archives androidJavadocsJar
+        }
+    }
+}
