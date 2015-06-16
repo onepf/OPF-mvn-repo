@@ -123,6 +123,20 @@ dependencies {
     releaseProvided 'org.onepf.findbugs:annotations:1.0'
 }
 
+//Apk signing functions
+def getFile(path) {
+    if (path != null) {
+        return file(path)
+    }
+}
+
+def isApkSigningCredentialsSpecified() {
+    return project.storeFile != null &&
+            project.localProperties.containsKey('StorePassword') &&
+            project.localProperties.containsKey('KeyAlias') &&
+            project.localProperties.containsKey('KeyPassword')
+}
+
 
 //Checkstyle and PMD
 apply plugin: 'com.noveogroup.android.check'
@@ -181,19 +195,6 @@ task jacocoTestReport(type: JacocoReport, dependsOn: "testDebug") {
 //Maven upload
 apply plugin: 'maven'
 apply plugin: 'signing'
-//Apk signing functions
-def getFile(path) {
-    if (path != null) {
-        return file(path)
-    }
-}
-
-def isApkSigningCredentialsSpecified() {
-    return project.storeFile != null &&
-            project.localProperties.containsKey('StorePassword') &&
-            project.localProperties.containsKey('KeyAlias') &&
-            project.localProperties.containsKey('KeyPassword')
-}
 
 def isReleaseBuild() {
     return project.android.defaultConfig.versionName.contains("SNAPSHOT") == false
