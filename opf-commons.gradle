@@ -14,11 +14,28 @@
  * limitations under the License.
  */
 
-apply plugin: 'android-sdk-manager'
-apply plugin: 'maven'
-apply plugin: 'signing'
-apply plugin: 'com.noveogroup.android.check'
-apply plugin: 'jacoco'
+apply plugin: 'net.ltgt.errorprone'
+
+def loadLocalProperties(propertiesFile, localProperties) {
+    def loadedProperties = new Properties()
+    if (propertiesFile.exists()) {
+        loadedProperties.load(propertiesFile.newDataInputStream())
+
+        localProperties << loadedProperties
+    }
+}
+
+def loadLocalProperties() {
+    def localProperties = new HashMap<String, String>()
+
+    def projectLocalPropertiesFile = project.rootProject.file('local.properties')
+    loadLocalProperties(projectLocalPropertiesFile, localProperties)
+
+    def moduleLocalPropertiesFile = project.file('local.properties')
+    loadLocalProperties(moduleLocalPropertiesFile, localProperties)
+
+    return localProperties
+}
 
 ext {
     localProperties = loadLocalProperties()
@@ -43,31 +60,20 @@ ext {
     isApkSigningCredentialsSpecified = isApkSigningCredentialsSpecified()
 }
 
-def loadLocalProperties() {
-    def localProperties = new HashMap<String, String>()
-
-    def projectLocalPropertiesFile = project.rootProject.file('local.properties')
-    loadLocalProperties(projectLocalPropertiesFile, localProperties)
-
-    def moduleLocalPropertiesFile = project.file('local.properties')
-    loadLocalProperties(moduleLocalPropertiesFile, localProperties)
-
-    return localProperties
-}
-
-def loadLocalProperties(propertiesFile, localProperties) {
-    def loadedProperties = new Properties()
-    if (propertiesFile.exists()) {
-        loadedProperties.load(propertiesFile.newDataInputStream())
-
-        localProperties << loadedProperties
-    }
-}
 
 //Common allprojects properties
 allprojects {
+    repositories {
+        //Simplify maven upload
+        maven { url 'https://oss.sonatype.org/content/repositories/releases/' }
+        //Allow snapshots
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+        //Third-party dependencies
+        maven { url 'https://raw.githubusercontent.com/onepf/OPF-mvn-repo/master/' }
+    }
+
     configurations.all {
-        // check for updates every build
+        //Check for updates every build
         resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
     }
 }
@@ -111,7 +117,15 @@ android {
     }
 }
 
-//Checkstyle and PMD rules
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    debugProvided 'com.google.code.findbugs:annotations:3.0.0'
+    releaseProvided 'org.onepf.findbugs:annotations:1.0'
+}
+
+
+//Checkstyle and PMD
+apply plugin: 'com.noveogroup.android.check'
 check {
     abortOnError true
 
@@ -124,7 +138,9 @@ check {
     }
 }
 
-//Jacoco task
+
+//Jacoco
+apply plugin: 'jacoco'
 build {
     doLast {
         jacocoTestReport.execute()
@@ -161,7 +177,11 @@ task jacocoTestReport(type: JacocoReport, dependsOn: "testDebug") {
     }
 }
 
-//apk signing functions
+
+//Maven upload
+apply plugin: 'maven'
+apply plugin: 'signing'
+//Apk signing functions
 def getFile(path) {
     if (path != null) {
         return file(path)
@@ -175,7 +195,6 @@ def isApkSigningCredentialsSpecified() {
             project.localProperties.containsKey('KeyPassword')
 }
 
-//Uploading archives functions
 def isReleaseBuild() {
     return project.android.defaultConfig.versionName.contains("SNAPSHOT") == false
 }
@@ -208,7 +227,6 @@ def hasAllArchivesUploadingProperties() {
     }
 }
 
-//uploadArchives task
 if (hasNexusCredentials() && hasAllArchivesUploadingProperties()) {
     afterEvaluate { project ->
         uploadArchives {
