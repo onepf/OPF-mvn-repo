@@ -74,9 +74,15 @@ allprojects {
                         'POM_SCM_URL', 'POM_SCM_CONNECTION', 'POM_SCM_DEV_CONNECTION', 'POM_ARTIFACT_ID']
 
         //apk signing
-        storeFile = getFile(localProperties.get('storeFile'))
+        storeFilePath = localProperties.get('storeFile')
+        storeFile = storeFilePath == null ? null : file(storeFilePath)
         getOpfSigningConfig = {
-            hasApkSigningCredentials() ? android.signingConfigs.opf : null
+            storeFile != null &&
+            localProperties.containsKey('storePassword') &&
+            localProperties.containsKey('keyAlias') &&
+            localProperties.containsKey('keyPassword')
+                ? android.signingConfigs.opf 
+                : null
         }
     }
 }
@@ -124,20 +130,6 @@ dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     debugProvided 'com.google.code.findbugs:annotations:3.0.0'
     releaseProvided 'org.onepf.findbugs:annotations:1.0'
-}
-
-//Apk signing functions
-def getFile(path) {
-    if (path != null) {
-        return file(path)
-    }
-}
-
-def hasApkSigningCredentials() {
-    return storeFile != null &&
-            localProperties.containsKey('storePassword') &&
-            localProperties.containsKey('keyAlias') &&
-            localProperties.containsKey('keyPassword')
 }
 
 
