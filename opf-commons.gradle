@@ -76,10 +76,11 @@ allprojects {
         //apk signing
         storeFilePath = localProperties.get('storeFile')
         storeFile = storeFilePath == null ? null : file(storeFilePath)
-        storePassword = null //localProperties.get('storePassword')
+        storePassword = localProperties.get('storePassword')
         keyAlias = localProperties.get('keyAlias')
         keyPassword = localProperties.get('keyPassword')
         getOpfSigningConfig = {
+            println storeFile + ' ' + storePassword + ' ' + keyAlias + ' ' + keyPassword
             storeFile != null && storePassword != null && keyAlias != null && keyPassword != null
                 ? android.signingConfigs.opf 
                 : null
