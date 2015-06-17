@@ -74,7 +74,7 @@ allprojects {
                         'POM_SCM_URL', 'POM_SCM_CONNECTION', 'POM_SCM_DEV_CONNECTION', 'POM_ARTIFACT_ID']
 
         //apk signing
-        storeFile = getFile(localProperties.get('opfpush-sample.signing'))
+        storeFile = getFile(localProperties.get('storeFile'))
         getOpfSigningConfig = {
             hasApkSigningCredentials() ? android.signingConfigs.opf : null
         }
@@ -89,9 +89,9 @@ android {
     signingConfigs {
         opf {
             storeFile storeFile
-            storePassword localProperties.get('StorePassword')
-            keyAlias localProperties.get('KeyAlias')
-            keyPassword localProperties.get('KeyPassword')
+            storePassword localProperties.get('storePassword')
+            keyAlias localProperties.get('keyAlias')
+            keyPassword localProperties.get('keyPassword')
         }
     }
 
