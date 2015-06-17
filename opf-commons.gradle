@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
+// Use errorprone compiler
 apply plugin: 'net.ltgt.errorprone'
 
+
+// Common project properties and configs
 def loadLocalProperties(propertiesFile, localProperties) {
     def loadedProperties = new Properties()
     if (propertiesFile.exists()) {
@@ -37,31 +40,6 @@ def loadLocalProperties() {
     return localProperties
 }
 
-ext {
-    localProperties = loadLocalProperties()
-
-    ext."signing.keyId" = localProperties.get('signing.keyId')
-    ext."signing.secretKeyRingFile" = localProperties.get('signing.secretKeyRingFile')
-    ext."signing.password" = localProperties.get('signing.password')
-
-    pomGroupId = 'org.onepf'
-    pomPackaging = getPomPackaging()
-    pomLicenseName = 'The Apache Software License, Version 2.0'
-    pomLicenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-    pomLicenseDist = 'repo'
-    pomDeveloperName = 'One Platform Foundation'
-    pomDeveloperId = 'onepf'
-
-    pomCheckList = ['RELEASE_REPOSITORY_URL', 'SNAPSHOT_REPOSITORY_URL', 'POM_URL', 'POM_NAME', 'POM_DESCRIPTION',
-                    'POM_SCM_URL', 'POM_SCM_CONNECTION', 'POM_SCM_DEV_CONNECTION', 'POM_ARTIFACT_ID']
-
-    //apk signing
-    storeFile = getFile(localProperties.get('opfpush-sample.signing'))
-    isApkSigningCredentialsSpecified = isApkSigningCredentialsSpecified()
-}
-
-
-//Common allprojects properties
 allprojects {
     repositories {
         //Simplify maven upload
@@ -76,6 +54,31 @@ allprojects {
         //Check for updates every build
         resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
     }
+
+    ext {
+        localProperties = loadLocalProperties()
+
+        ext."signing.keyId" = localProperties.get('signing.keyId')
+        ext."signing.secretKeyRingFile" = localProperties.get('signing.secretKeyRingFile')
+        ext."signing.password" = localProperties.get('signing.password')
+
+        pomGroupId = 'org.onepf'
+        pomPackaging = hasProperty('POM_PACKAGING') ? POM_PACKAGING : 'aar'
+        pomLicenseName = 'The Apache Software License, Version 2.0'
+        pomLicenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+        pomLicenseDist = 'repo'
+        pomDeveloperName = 'One Platform Foundation'
+        pomDeveloperId = 'onepf'
+
+        pomCheckList = ['RELEASE_REPOSITORY_URL', 'SNAPSHOT_REPOSITORY_URL', 'POM_URL', 'POM_NAME', 'POM_DESCRIPTION',
+                        'POM_SCM_URL', 'POM_SCM_CONNECTION', 'POM_SCM_DEV_CONNECTION', 'POM_ARTIFACT_ID']
+
+        //apk signing
+        storeFile = getFile(localProperties.get('opfpush-sample.signing'))
+        getOpfSigningConfig = {
+            hasApkSigningCredentials() ? android.signingConfigs.opf : null
+        }
+    }
 }
 
 //Common android properties
@@ -84,11 +87,11 @@ android {
     buildToolsVersion project.buildToolsVersion
 
     signingConfigs {
-        release {
-            storeFile project.storeFile
-            storePassword project.localProperties.get('StorePassword')
-            keyAlias project.localProperties.get('KeyAlias')
-            keyPassword project.localProperties.get('KeyPassword')
+        opf {
+            storeFile storeFile
+            storePassword localProperties.get('StorePassword')
+            keyAlias localProperties.get('KeyAlias')
+            keyPassword localProperties.get('KeyPassword')
         }
     }
 
@@ -130,11 +133,11 @@ def getFile(path) {
     }
 }
 
-def isApkSigningCredentialsSpecified() {
-    return project.storeFile != null &&
-            project.localProperties.containsKey('StorePassword') &&
-            project.localProperties.containsKey('KeyAlias') &&
-            project.localProperties.containsKey('KeyPassword')
+def hasApkSigningCredentials() {
+    return storeFile != null &&
+            localProperties.containsKey('StorePassword') &&
+            localProperties.containsKey('KeyAlias') &&
+            localProperties.containsKey('KeyPassword')
 }
 
 
@@ -197,34 +200,30 @@ apply plugin: 'maven'
 apply plugin: 'signing'
 
 def isReleaseBuild() {
-    return project.android.defaultConfig.versionName.contains("SNAPSHOT") == false
-}
-
-def getPomPackaging() {
-    return hasProperty('POM_PACKAGING') ? POM_PACKAGING : 'aar'
+    return android.defaultConfig.versionName.contains("SNAPSHOT") == false
 }
 
 def hasNexusCredentials() {
-    return project.localProperties.containsKey('nexusUsername') && project.localProperties.containsKey('nexusPassword')
+    return localProperties.containsKey('nexusUsername') && localProperties.containsKey('nexusPassword')
 }
 
-uploadArchives {
-    doFirst {
-        checkArchiveUploadingProperties()
+def hasAllArchivesUploadingProperties() {
+    return !pomCheckList.any {
+        return !project.hasProperty(it)
     }
 }
 
 def checkArchiveUploadingProperties() {
-    project.pomCheckList.each {
+    pomCheckList.each {
         if (!project.hasProperty(it)) {
             throw new IllegalStateException('You must specify ' + it + ' in gradle.properties file')
         }
     }
 }
 
-def hasAllArchivesUploadingProperties() {
-    return !project.pomCheckList.any {
-        return !project.hasProperty(it)
+uploadArchives {
+    doFirst {
+        checkArchiveUploadingProperties()
     }
 }
 
@@ -237,25 +236,25 @@ if (hasNexusCredentials() && hasAllArchivesUploadingProperties()) {
                         beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
                     }
 
-                    pom.version = project.android.defaultConfig.versionName
-                    pom.groupId = project.pomGroupId
+                    pom.version = android.defaultConfig.versionName
+                    pom.groupId = pomGroupId
                     pom.artifactId = POM_ARTIFACT_ID
 
                     repository(url: RELEASE_REPOSITORY_URL) {
                         authentication(
-                                userName: project.localProperties.get('nexusUsername'),
-                                password: project.localProperties.get('nexusPassword')
+                                userName: localProperties.get('nexusUsername'),
+                                password: localProperties.get('nexusPassword')
                         )
                     }
                     snapshotRepository(url: SNAPSHOT_REPOSITORY_URL) {
                         authentication(
-                                userName: project.localProperties.get('nexusUsername'),
-                                password: project.localProperties.get('nexusPassword')
+                                userName: localProperties.get('nexusUsername'),
+                                password: localProperties.get('nexusPassword')
                         )
                     }
 
                     pom.project {
-                        packaging = project.pomPackaging
+                        packaging = pomPackaging
                         url POM_URL
                         name POM_NAME
                         description POM_DESCRIPTION
@@ -268,24 +267,16 @@ if (hasNexusCredentials() && hasAllArchivesUploadingProperties()) {
 
                         licenses {
                             license {
-                                name project.pomLicenseName
-                                url project.pomLicenseUrl
-                                distribution project.pomLicenseDist
-                            }
-                        }
-
-                        repositories {
-                            repository {
-                                id 'onepf-repo'
-                                name 'OnePF Repository'
-                                url 'https://raw.githubusercontent.com/onepf/OPF-mvn-repo/master/'
+                                name pomLicenseName
+                                url pomLicenseUrl
+                                distribution pomLicenseDist
                             }
                         }
 
                         developers {
                             developer {
-                                id project.pomDeveloperId
-                                name project.pomDeveloperName
+                                id pomDeveloperId
+                                name pomDeveloperName
                             }
                         }
                     }
