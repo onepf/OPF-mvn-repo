@@ -94,10 +94,10 @@ android {
 
     signingConfigs {
         opf {
-            storeFile storeFile
-            storePassword storePassword
-            keyAlias keyAlias
-            keyPassword keyPassword
+            storeFile project.storeFile
+            storePassword project.storePassword
+            keyAlias project.keyAlias
+            keyPassword project.keyPassword
         }
     }
 
