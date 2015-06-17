@@ -79,8 +79,8 @@ allprojects {
         storePassword = localProperties.get('storePassword')
         keyAlias = localProperties.get('keyAlias')
         keyPassword = localProperties.get('keyPassword')
+         println '' + storeFile + ' ' + storePassword + ' ' + keyAlias + ' ' + keyPassword
         getOpfSigningConfig = {
-            println storeFile + ' ' + storePassword + ' ' + keyAlias + ' ' + keyPassword
             storeFile != null && storePassword != null && keyAlias != null && keyPassword != null
                 ? android.signingConfigs.opf 
                 : null
