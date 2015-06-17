@@ -135,9 +135,9 @@ def getFile(path) {
 
 def hasApkSigningCredentials() {
     return storeFile != null &&
-            localProperties.containsKey('StorePassword') &&
-            localProperties.containsKey('KeyAlias') &&
-            localProperties.containsKey('KeyPassword')
+            localProperties.containsKey('storePassword') &&
+            localProperties.containsKey('keyAlias') &&
+            localProperties.containsKey('keyPassword')
 }
 
 
