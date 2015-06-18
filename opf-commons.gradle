@@ -95,11 +95,7 @@ android {
 
     signingConfigs {
         opf {
-//            storeFile storeFile
-//            storePassword storePassword
-//            keyAlias keyAlias
-//            keyPassword keyPassword
-            storeFile file(project.storeFilePath)
+            storeFile project.storeFilePath != null ? file(project.storeFilePath) : null
             storePassword project.storePassword
             keyAlias project.keyAlias
             keyPassword project.keyPassword
