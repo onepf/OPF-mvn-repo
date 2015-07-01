@@ -140,11 +140,11 @@ check {
     abortOnError true
 
     checkstyle {
-        config resources.text.fromString(urlCache.get('https://raw.githubusercontent.com/onepf/OPF-mvn-repo/master/config/checkstyle.xml'))
+        config resources.text.fromString(urlCache.get('https://raw.githubusercontent.com/onepf/OPF-mvn-repo/master/config/checkstyle.xml').toURL().text)
     }
 
     pmd {
-        config resources.text.fromString(urlCache.get('https://raw.githubusercontent.com/onepf/OPF-mvn-repo/master/config/pmd.xml'))
+        config resources.text.fromString(urlCache.get('https://raw.githubusercontent.com/onepf/OPF-mvn-repo/master/config/pmd.xml').toURL().text)
     }
 }
 
