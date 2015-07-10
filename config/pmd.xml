@@ -34,7 +34,17 @@
     <rule ref="rulesets/java/codesize.xml"/>
     <rule ref="rulesets/java/codesize.xml/CyclomaticComplexity">
         <properties>
-            <property name="reportLevel" value="20"/>
+            <property name="reportLevel" value="30"/>
+        </properties>
+    </rule>
+    <rule ref="rulesets/java/codesize.xml/ModifiedCyclomaticComplexity">
+        <properties>
+            <property name="reportLevel" value="30"/>
+        </properties>
+    </rule>
+    <rule ref="rulesets/java/codesize.xml/StdCyclomaticComplexity">
+        <properties>
+            <property name="reportLevel" value="30"/>
         </properties>
     </rule>
     <rule ref="rulesets/java/codesize.xml/TooManyMethods">
