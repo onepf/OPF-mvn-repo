@@ -85,6 +85,9 @@ allprojects {
             }
             return null
         }
+        getOpfDebugSigningConfig = {
+            return android.signingConfigs.opfDebug
+        }
     }
 }
 
@@ -94,6 +97,13 @@ android {
     buildToolsVersion project.buildToolsVersion
 
     signingConfigs {
+        opfDebug {
+            storeFile urlCache.get("https://github.com/onepf/OPF-mvn-repo/raw/master/keystore/debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+
         opf {
             storeFile project.storeFilePath != null ? file(project.storeFilePath) : null
             storePassword project.storePassword
