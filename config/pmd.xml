@@ -94,6 +94,7 @@
         <exclude name="TooFewBranchesForASwitchStatement"/>
         <exclude name="AbstractClassWithoutAbstractMethod"/>
         <exclude name="NonStaticInitializer"/>
+        <exclude name="GodClass"/>
     </rule>
 
     <rule ref="rulesets/java/empty.xml"/>
