@@ -162,7 +162,7 @@
         </module>
         <module name="MagicNumber">
             <property name="severity" value="info" />
-            <property name="ignoreNumbers" value="-1, 0, 1, 2, 10, 31, 60, 100, 256, 1000" />
+            <property name="ignoreNumbers" value="-1, -0.0F, 0, 1, 2, 10, 31, 60, 100, 256, 1000" />
         </module>
         <module name="MissingSwitchDefault">
             <property name="severity" value="ignore" />
