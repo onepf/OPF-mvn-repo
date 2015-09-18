@@ -31,7 +31,9 @@
 
     <rule ref="rulesets/java/clone.xml"/>
 
-    <rule ref="rulesets/java/codesize.xml"/>
+    <rule ref="rulesets/java/codesize.xml">
+        <exclude name="ExcessivePublicCount"/>
+    </rule>
     <rule ref="rulesets/java/codesize.xml/CyclomaticComplexity">
         <properties>
             <property name="reportLevel" value="30"/>
@@ -49,7 +51,7 @@
     </rule>
     <rule ref="rulesets/java/codesize.xml/TooManyMethods">
         <properties>
-            <property name="maxmethods" value="25"/>
+            <property name="maxmethods" value="50"/>
         </properties>
     </rule>
 
