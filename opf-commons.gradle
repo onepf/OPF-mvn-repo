@@ -17,6 +17,9 @@
 // Use errorprone compiler
 apply plugin: 'net.ltgt.errorprone'
 
+configurations.errorprone {
+    resolutionStrategy.force 'com.google.errorprone:error_prone_core:2.0.5'
+}
 
 // Common project properties and configs
 def loadLocalProperties(propertiesFile, localProperties) {
